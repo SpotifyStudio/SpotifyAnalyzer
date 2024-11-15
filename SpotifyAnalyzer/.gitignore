@@ -1,7 +1,8 @@
 #ignore virtual environment
 venv/
 #ignore environment variables
-*.env
+*.env.path
+*.env.api
 # Ignore specific extensions
 *.keras
 *.mp3

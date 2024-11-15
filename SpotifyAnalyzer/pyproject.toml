@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "spotifyanalyzer"
+version = "0.1.0"
+description = "This is an industry grade python package designed to be used in my project for spotify roast and music insights."
+authors = ["Malhar-Girgaonkar <malhargirgaonkar@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.12.6"
+requests = "^2.32.3"
+librosa = "^0.10.2.post1"
+audioread = "^3.0.1"
+langchain = "^0.3.7"
+crewai = "^0.80.0"
+spotipy = "^2.24.0"
+python-dotenv = "^1.0.1"
+tensorflow = "^2.18.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 #load environment variables
 load_dotenv(dotenv_path= ".env.path" , override=True)
-load_dotenv(dotenv_path= ".env.api" , override=True)
+
 
 class GenrePrediction:
     """
@@ -227,3 +227,5 @@ class GenrePrediction:
         genre_index = self.prediction(processed_audio)
         genre_label = self._genres[genre_index]
         return genre_label
+    
+

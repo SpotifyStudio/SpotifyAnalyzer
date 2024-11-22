@@ -12,9 +12,15 @@ sa = SpotifyAnalysis()
 
 #sa.Check_spotify_api_limit()
 
-artist = input("Enter artist name: ")
-top_song_list = sa.get_top_songs_of_artist(artist)
-print(f"\t{artist}\nSr no.\tSong\tpopularity")
-for element in top_song_list:
-    print(f"{element[0]}\t{element[1]}\t{element[2]}")
+#artist = input("Enter artist name: ")
+#top_song_list = sa.get_top_songs_of_artist(artist)
+# print(f"\t{artist}\nSr no.\tSong\tpopularity")
+# for element in top_song_list:
+#     print(f"{element[0]}\t{element[1]}\t{element[2]}")
+
+analysis = SpotifyAnalysis()
+top_tracks = analysis.get_user_top_tracks()
+print(top_tracks)
+
+
 

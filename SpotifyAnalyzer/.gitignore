@@ -7,3 +7,4 @@ venv/
 *.keras
 *.mp3
 *.wav
+.cache

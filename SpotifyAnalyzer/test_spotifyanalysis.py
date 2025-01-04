@@ -10,17 +10,17 @@ from src.SpotifyAnalyzer.SpotifyAnalyzer import SpotifyAnalysis
 
 sa = SpotifyAnalysis()
 
-#sa.Check_spotify_api_limit()
+#GET TOP ARTIST SONGS
+# artist = input("\nEnter Artist :")
+# sa.get_artist_top_tracks(artist)
 
-#artist = input("Enter artist name: ")
-#top_song_list = sa.get_top_songs_of_artist(artist)
-# print(f"\t{artist}\nSr no.\tSong\tpopularity")
-# for element in top_song_list:
-#     print(f"{element[0]}\t{element[1]}\t{element[2]}")
 
-analysis = SpotifyAnalysis()
-top_tracks = analysis.get_user_top_tracks()
-print(top_tracks)
+# CHECK IF TOKEN IS VALID
+# sa.check_token_validity()
+
+# CHECK REAUTHENTICATION
+sa.Reauthenticate()
+
 
 
 

@@ -15,10 +15,9 @@ class SpotifyAnalysis:
         self._spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
         self._spotify_redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
         self._scope = "user-top-read user-read-recently-played user-library-read playlist-read-private playlist-read-collaborative"
-
+        # Check if api keys are available  
         if not self._spotify_client_id or not self._spotify_client_secret:
             raise ValueError("Spotify client ID and secret must be set in the environment variables.")
-
         # Authenticate with Spotify using OAuth2
         self._sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
             client_id=self._spotify_client_id,
@@ -27,6 +26,8 @@ class SpotifyAnalysis:
             scope=self._scope,
             cache_path= os.path.join(os.getenv("SPOTIFY_CACHE_PATH") , ".cache")
         ))
+        #Private variables 
+        self._Playlist_Details = []
 
     def check_token_validity(self):
         """Check if token is valid"""
@@ -61,6 +62,46 @@ class SpotifyAnalysis:
         # Get the new access token and update the _sp instance
         self._sp = spotipy.Spotify(auth_manager=self._sp.auth_manager)
         print("Authentication successful. Token updated.")
+
+    def get_playlist_songs(self):
+        # Fetch liked songs with a limit of 100
+        self._results = self._sp.current_user_saved_tracks(limit=50)
+        self._songs = []
+        
+        # Extract song names from the fetched results
+        for item in self._results['items']:
+            track = item['track']
+            self._songs.append(track['name'])  # Add song name to the list
+        
+        return self._songs
+    
+    def get_list_of_playlist(self):
+        """
+        Fetches a list of all playlists available to the authenticated user.
+        
+        Returns:
+            list: A list of playlists with their names and IDs.
+        """
+        try:
+            self._playlists = self._sp.current_user_playlists(limit=20)
+            self._all_playlists = []
+            # Loop through playlists and collect details
+            while self._playlists:
+                for playlist in self._playlists['items']:
+                    self._all_playlists.append({
+                        'name': playlist['name'],
+                        'id': playlist['id']
+                    })
+                # Fetch the next set of playlists if available
+                self._playlists = self._sp.next(self._playlists) if self._playlists['next'] else None
+            #Assign to class variable
+            self._Playlist_Details =self._all_playlists
+            return self._all_playlists
+        except Exception as e:
+            print(f"Error fetching playlists: {e}")
+            return []
+
+
 
     def get_artist_top_tracks(self, artist_name):
         """

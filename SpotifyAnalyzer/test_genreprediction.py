@@ -6,10 +6,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 
 # Import after modifying the path
 #from SpotifyAnalyzer.utils import GenrePrediction
-from SpotifyAnalyzer.src.SpotifyAnalyzer.GenrePrediction import GenrePrediction
+from src.SpotifyAnalyzer.GenrePrediction import GenrePrediction
 
 # Example usage
-audio_path = "tests/metal_demo.mp3"
+audio_path = "tests/pop_demo.wav"
 mod = GenrePrediction()
 output = mod.predict_genre_chain(audio_path)
 print(output)

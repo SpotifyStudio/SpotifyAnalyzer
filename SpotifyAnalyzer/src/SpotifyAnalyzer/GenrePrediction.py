@@ -4,9 +4,10 @@ import shutil
 import numpy as np
 import librosa
 import logging
+from dotenv import load_dotenv
 from tensorflow.keras.models import load_model
 from tensorflow.image import resize
-from dotenv import load_dotenv
+
 
 #load environment variables
 load_dotenv(dotenv_path= ".env.path" , override=True)

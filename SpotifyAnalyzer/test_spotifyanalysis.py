@@ -1,5 +1,6 @@
 import sys
 import os
+import pandas as pd
 
 # Dynamically add the src directory to the module search path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
@@ -18,17 +19,28 @@ sa = SpotifyAnalysis()
 # CHECK IF TOKEN IS VALID---------------SUCCESS
 # sa.check_token_validity()
 
+
 # CHECK REAUTHENTICATION---------------SUCCESS
 # sa.Reauthenticate()
 
-#CHECK USERS LIKED SONGS---------------FAILED
-# liked_songs = sa.get_liked_songs()
-# print("Liked Songs:")
-# for i, song in enumerate(liked_songs, 1):
-#     print(f"{i}. {song}")
 
-#CHECK USERS PLAYLISTS---------------SUCCESS
+#CHECK USERS PLAYLISTS LIST---------------SUCCESS
 # list_of_playlists = sa.get_list_of_playlist()
-# print(f"\nFIELD\tVALUE")
-# for playlist in list_of_playlists:
-#     print(f"\nName: {playlist['name']} \t ID: {playlist['id']}")
+# print(f"\nLIST OF PLAYLISTS")
+# list_of_playlist_df = pd.DataFrame(list_of_playlists)
+# print(list_of_playlist_df)
+
+
+#CHECK USERS CURRENT PLAYLISTS CONTENT---------------SUCCESS
+# playlist_id = input("\nEnter playlist ID: ")
+# playlist_content = sa.get_playlist_content(playlist_id=playlist_id)
+# print(f"\nPLAYLIST CONTENT\n")
+# playlist_df = pd.DataFrame(playlist_content)
+# print(playlist_df)
+
+
+#GET USERS LIKED SONG DETAILS---------------FAILED
+liked_song_details = sa.get_liked_songs_playlist()
+liked_song_df = pd.DataFrame(liked_song_details)
+print("\nLIKED SONGS")
+print(liked_song_df)

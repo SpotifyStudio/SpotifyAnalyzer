@@ -3,6 +3,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 
+
 # Load environment variables
 load_dotenv(dotenv_path=".env.api", override=True)
 load_dotenv(dotenv_path=".env.path", override=True)
@@ -28,9 +29,31 @@ class SpotifyAnalysis:
         ))
         #Private variables 
         self._Playlist_Details = []
+        self._current_playlist_content = []
+        self._liked_playlist_content = []
 
     def check_token_validity(self):
-        """Check if token is valid"""
+        """
+        Verifies the validity of the current Spotify API token.
+
+        This method checks if the current token is valid by attempting to fetch
+        the current user's details using the Spotify API. If the token is valid,
+        it displays the user information. If the token is invalid or expired,
+        the method handles the error by attempting reauthentication.
+
+        Returns:
+            bool: 
+                - True if the token is valid.
+                - False if the token is invalid or expired, and reauthentication is triggered.
+
+        Exceptions:
+            spotipy.exceptions.SpotifyException: Raised when the Spotify API returns an error.
+
+        Behavior:
+            - Prints "Token is valid." and the user's information if the token is valid.
+            - Prints "Token is expired." and triggers reauthentication if the token has expired.
+            - Prints "Token is invalid." and triggers reauthentication if the token is otherwise invalid.
+        """
         try:
             # Try to get the current user details
             self._info_user = self._sp.current_user()
@@ -63,18 +86,7 @@ class SpotifyAnalysis:
         self._sp = spotipy.Spotify(auth_manager=self._sp.auth_manager)
         print("Authentication successful. Token updated.")
 
-    def get_playlist_songs(self):
-        # Fetch liked songs with a limit of 100
-        self._results = self._sp.current_user_saved_tracks(limit=50)
-        self._songs = []
-        
-        # Extract song names from the fetched results
-        for item in self._results['items']:
-            track = item['track']
-            self._songs.append(track['name'])  # Add song name to the list
-        
-        return self._songs
-    
+
     def get_list_of_playlist(self):
         """
         Fetches a list of all playlists available to the authenticated user.
@@ -96,12 +108,97 @@ class SpotifyAnalysis:
                 self._playlists = self._sp.next(self._playlists) if self._playlists['next'] else None
             #Assign to class variable
             self._Playlist_Details =self._all_playlists
+            # print(self._Playlist_Details)
             return self._all_playlists
         except Exception as e:
             print(f"Error fetching playlists: {e}")
             return []
 
+    def get_playlist_content(self , playlist_id):
+        """
+        Fetch the contents of a Spotify playlist by ID and return details like 
+        song name, artist name, genre, and album name.
+        
+        Args:
+            playlist_id (str): The Spotify playlist ID.
 
+        Returns:
+            list: A list of dictionaries containing song details.
+        """
+        try:
+            self._results = self._sp.playlist_items(playlist_id, additional_types=('track',))
+            self._playlist_content = []
+
+            while self._results:
+                for item in self._results['items']:
+                    track = item['track']
+                    #extract details from track 
+                    self._song_name = track['name']
+                    self._artist_name = track['artists'][0]['name']
+                    self._artist_id = track['artists'][0]['id']
+                    self._album_name = track['album']['name']
+                    self._artist_info = self._sp.artist(self._artist_id)
+                    self._genre = ', '.join(self._artist_info['genres']) if self._artist_info['genres'] else 'Unknown'
+                    #append details to self._playlist_content
+                    self._playlist_content.append({
+                        'song_name': self._song_name,
+                        'artist_name': self._artist_name,
+                        'artist_id': self._artist_id,
+                        'genre': self._genre,
+                        'album_name': self._album_name
+                        })
+                # Get the next page of results if available
+                self._results = self._sp.next(self._results) if self._results['next'] else None
+
+            self._current_playlist_content = self._playlist_content
+            #print(self._current_playlist_content)
+            return self._playlist_content
+        except Exception as e:
+            print(f"Error fetching playlist content: {e}")
+            return []
+
+    def get_liked_songs_playlist(self):
+        """
+        Fetch the authenticated user's liked songs and return details like
+        song name, artist name, genre, and album name in the desired structure.
+
+        Returns:
+            list: A list of dictionaries containing song details.
+        """
+        try:
+            # Initialize the list to hold the liked song details
+            self._liked_songs_content = []
+            self._results = self._sp.current_user_saved_tracks(limit=50)  # Fetch initial batch of liked songs
+
+            while self._results:
+                for item in self._results['items']:
+                    track = item['track']
+                    # Extract details from the track
+                    self._song_name = track['name']
+                    self._artist_name = track['artists'][0]['name']
+                    self._artist_id = track['artists'][0]['id']
+                    self._album_name = track['album']['name']
+                    # Fetch artist details to get the genre
+                    self._artist_info = self._sp.artist(self._artist_id)
+                    self._genre = ', '.join(self._artist_info['genres']) if self._artist_info['genres'] else 'Unknown'
+                    # Append the details to the list
+                    self._liked_songs_content.append({
+                        'song_name': self._song_name,
+                        'artist_name': self._artist_name,
+                        'artist_id': self._artist_id,
+                        'genre': self._genre,
+                        'album_name': self._album_name
+                    })
+
+                # Fetch the next batch of results if available
+                self._results = self._sp.next(self._results) if self._results['next'] else None
+            self._liked_playlist_content = self._liked_songs_content
+            return self._liked_songs_content
+
+        except Exception as e:
+            print(f"Error fetching liked songs: {e}")
+            return []
+    
 
     def get_artist_top_tracks(self, artist_name):
         """

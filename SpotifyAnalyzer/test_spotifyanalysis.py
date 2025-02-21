@@ -79,6 +79,13 @@ sa = SpotifyAnalysis()
 # print("\nSaving started")
 # sa.save_data_as_csv(playlist_name , content_code=3)
 
+#GET METRIC FOR EVERY SONG IN PLAYLIST USING ITS CONTENT_CODE_MAP---------------FAILED
+# playlist_id = input("\nEnter playlist ID: ")
+# playlist_name , playlist_content  = sa.get_playlist_content(playlist_id=playlist_id)
+# sa.get_track_metrics(content_code=2)
+
+#LOG OUT THE USER AFTER SPOTIFY DATA EXTRACTION IS DONE(TO BE USED IN CORES WHEN USER EXISTS THE APPLICATION)---------------SUCCESS
+#sa.logout_user()
 
 # ISSUE IS WITH THE get_list_of_playlist() function in the line sa.current_user_playlists(limit= 20) line as api call returns this 
 # {'href': 'https://api.spotify.com/v1/users/31uk6uyvtlxlm43l5tew5xjlosza/playlists?offset=0&limit=50', 'limit': 50, 'next': None, 'offset': 0, 'previous': None, 'total': 0, 'items': []}

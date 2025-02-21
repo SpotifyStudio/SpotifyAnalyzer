@@ -10,7 +10,79 @@ load_dotenv(dotenv_path=".env.path", override=True)
 
 
 class SpotifyAnalysis:
+    """
+    A class for analyzing a user's Spotify account by retrieving and managing playlist 
+    and song data using the Spotify API.
+
+    This class:
+    - Authenticates the user via Spotify OAuth.
+    - Fetches user details, playlists, and playlist content.
+    - Verifies and refreshes authentication tokens.
+    - Stores and organizes data in structured formats.
+
+    Features:
+    - Retrieve user ID and display name.
+    - Validate API token and reauthenticate if necessary.
+    - Fetch playlists and their details.
+    - Retrieve song information from playlists.
+    - Maintain a structured mapping of fetched content.
+
+    Raises:
+        ValueError: If API credentials are missing from environment variables.
+
+    Example Usage:
+        >>> spotify = SpotifyAnalysis()
+        >>> spotify.get_user_id()
+        ('user123', 'John Doe')
+        >>> playlists = spotify.get_list_of_playlist()
+    """
     def __init__(self):
+        """
+        Initializes the Spotify API client and sets up user authentication.
+
+        This constructor:
+        - Loads Spotify API credentials from environment variables.
+        - Authenticates the user using OAuth2.
+        - Initializes private variables to store user and playlist data.
+        - Defines a mapping for different types of content storage.
+
+        Parameters:
+            None (Values are fetched from environment variables)
+
+        Returns:
+            None
+
+        Instance Variables:
+            - self._spotify_client_id (str): Spotify API Client ID loaded from environment variables.
+            - self._spotify_client_secret (str): Spotify API Client Secret loaded from environment variables.
+            - self._spotify_redirect_uri (str): Redirect URI for OAuth authentication.
+            - self._scope (str): Permissions required for accessing Spotify data.
+            - self._user_data_save_path (str): Path to save user data, fetched from environment variables.
+            - self._sp (Spotify): Authenticated Spotify API client instance.
+            - self._user_id (str): Stores the user’s unique Spotify ID.
+            - self._user_name (str): Stores the user’s Spotify display name.
+            - self._Playlists_Details (list): Stores details of the user's playlists.
+            - self._current_playlist_content (list): Stores tracks of the currently selected playlist.
+            - self._liked_playlist_content (list): Stores tracks from the user's liked songs.
+
+        Content Code Map:
+        
+        self._content_code_map (dict): A mapping of integer codes to content storage variables.
+            - 1 → self._Playlists_Details (User's playlists details)
+            - 2 → self._current_playlist_content (Currently selected playlist's content)
+            - 3 → self._liked_playlist_content (User's liked songs)
+
+        Raises:
+            ValueError: If Spotify Client ID or Client Secret is not set in environment variables.
+
+        Example:
+            >>> obj = SpotifyClient()
+            Spotify authentication successful.
+
+        Notes:
+            - The `cache_path` stores authentication tokens to prevent frequent re-authentication.
+            - `show_dialog=True` forces login prompt for user authorization.
+        """
         # Load credentials from environment variables
         self._spotify_client_id = os.getenv("SPOTIFY_CLIENT_ID")
         self._spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
@@ -37,17 +109,24 @@ class SpotifyAnalysis:
         self._liked_playlist_content = []
         #Content_code mapping for liked content save or playlistdetails save or playlist content save
         self._content_code_map = {1: self._Playlists_Details, 2: self._current_playlist_content, 3: self._liked_playlist_content}
+    
+
     def get_user_id(self):
         """
-        Fetch the current authenticated user's Spotify user ID.
+        ### DESCRIPTION
+        
+        Fetch the current authenticated user's Spotify user ID and display name.
 
-        Args:
-            sp: Spotipy client object.
+        ### PARAMETERS
+        None
 
-        Returns:
-            str: The user's Spotify ID.
-            str: The user's Spotify display name.
+        ### RETURN
+        
+        - user_id (str): The user's Spotify ID.
+        - user_name (str): The user's Spotify display name.
+        - None: Returns None if an error occurs while fetching the user details.
         """
+
         try:
             user_profile = self._sp.current_user()
             # print(f"\n user profile details from response: {user_profile}")
@@ -59,28 +138,23 @@ class SpotifyAnalysis:
         except Exception as e:
             print(f"Error fetching user ID: {e}")
             return None
+    
 
     def check_token_validity(self):
         """
+        ### DESCRIPTION
+        
         Verifies the validity of the current Spotify API token.
 
-        This method checks if the current token is valid by attempting to fetch
-        the current user's details using the Spotify API. If the token is valid,
-        it displays the user information. If the token is invalid or expired,
-        the method handles the error by attempting reauthentication.
+        ### PARAMETERS
+        
+        None
 
-        Returns:
-            bool: 
-                - True if the token is valid.
-                - False if the token is invalid or expired, and reauthentication is triggered.
-
-        Exceptions:
-            spotipy.exceptions.SpotifyException: Raised when the Spotify API returns an error.
-
-        Behavior:
-            - Prints "Token is valid." and the user's information if the token is valid.
-            - Prints "Token is expired." and triggers reauthentication if the token has expired.
-            - Prints "Token is invalid." and triggers reauthentication if the token is otherwise invalid.
+        ### RETURN
+        
+        is_valid (bool):
+            - True if the token is valid.
+            - False if the token is invalid or expired, triggering reauthentication.
         """
         try:
             # Try to get the current user details
@@ -97,11 +171,28 @@ class SpotifyAnalysis:
                 print("Token is invalid.")
             self.Reauthenticate()
             return False
-        
+    
 
     def Reauthenticate(self):
-        """Prompt user to authenticate again and save new token."""
-        print("Starting authentication process...")
+        """
+        ### DESCRIPTION
+        
+        Prompts the user to authenticate again and updates the Spotify API token.
+
+        ### PARAMETERS
+        
+        None
+
+        ### RETURN
+        
+        None
+
+        ### BEHAVIOR
+        
+        - Initiates the authentication process using SpotifyOAuth.
+        - Updates the authentication manager with a new token.
+        - Prints "Authentication successful. Token updated." upon success.
+        """
         self._sp.auth_manager = SpotifyOAuth(
             client_id=self._spotify_client_id,
             client_secret=self._spotify_client_secret,
@@ -112,17 +203,38 @@ class SpotifyAnalysis:
         # Get the new access token and update the _sp instance
         self._sp = spotipy.Spotify(auth_manager=self._sp.auth_manager)
         print("Authentication successful. Token updated.")
-
+    
 
     def get_list_of_playlist(self,limit = 20):
         """
-        Fetch playlists of a specific Spotify user.
+        ### DESCRIPTION
+        
+        Fetches the playlists of the authenticated Spotify user.
 
-        Args:
-            limit (int): Number of playlists to fetch per request.
+        ### PARAMETERS
+        
+        limit (int): The number of playlists to fetch per request (default is 20).
 
-        Returns:
-            list: A list of playlists with names and IDs.
+        ### RETURN
+
+        list_of_playlists (str): A label indicating the returned data.
+        playlists (list of dict): A list of dictionaries, where each dictionary represents a playlist with:
+            - 'name' (str): The name of the playlist.
+            - 'id' (str): The unique identifier of the playlist.
+
+            Example:
+            [
+                {"name": "Playlist 1", "id": "12345abcde"},
+                {"name": "Playlist 2", "id": "67890fghij"},
+                ...
+            ]
+
+        If an error occurs, returns an empty string and an empty list.
+
+        ### BEHAVIOR
+        - Retrieves the user's playlists using the Spotify API.
+        - Stores playlist details in `_Playlists_Details` and `_content_code_map[1]`.
+        - Returns the list of playlists along with a label.
         """
         try:
             results = self._sp.user_playlists(user=self._user_id, limit=limit)
@@ -136,74 +248,182 @@ class SpotifyAnalysis:
         except Exception as e:
             print(f"Error fetching user playlists: {e}")
             return "",[]
+    
 
-        
     def get_playlist_content(self, playlist_id):
-            """
-            Fetch the contents of a Spotify playlist by ID and return details like 
-            song name, artist name, genre, and album name.
+        """
+        ### DESCRIPTION
+        
+        Fetches the contents of a Spotify playlist using its playlist ID. 
+        Returns details such as song name, artist name, genre, and album name.
+
+        ### PARAMETERS
+        
+        playlist_id (str): The unique Spotify ID of the playlist.
+
+        ### RETURN
+        
+        playlist_name (str): The name of the playlist.
+        playlist_content (list of dict): A list of dictionaries where each dictionary represents a song with:
+        
+            - 'song_name' (str): Name of the song.
+            - 'song_id' (str): Unique ID of the song.
+            - 'artist_name' (str): Name of the primary artist.
+            - 'artist_id' (str): Unique ID of the artist.
+            - 'genre' (str): Genre(s) associated with the artist.
+            - 'album_name' (str): Name of the album the song belongs to.
+            - 'date_released' (str): Release date of the song.
+            - 'date_added' (str): Date when the song was added to the playlist.
+            - "popularity" (int): A score of how popular the song is on spotify.
+
+            Example:
             
-            Args:
-                playlist_id (str): The Spotify playlist ID.
+            [
+                {
+                    "song_name": "Blinding Lights",
+                    "song_id": "3A2gZZ3j5ZSU2hE2p9Ddlg",
+                    "artist_name": "The Weeknd",
+                    "artist_id": "1Xyo4u8uXC1ZmMpatF05PJ",
+                    "genre": "R&B, Pop",
+                    "album_name": "After Hours",
+                    "date_released": "2020-03-20",
+                    "date_added": "2023-07-15T12:34:56Z",
+                    "popularity": 90
+                },
+                {
+                    "song_name": "Shape of You",
+                    "song_id": "7qiZfU4dY1lWllzX7mPBI3",
+                    "artist_name": "Ed Sheeran",
+                    "artist_id": "6eUKZXaKkcviH0Ku9w2n3V",
+                    "genre": "Pop",
+                    "album_name": "Divide",
+                    "date_released": "2017-01-06",
+                    "date_added": "2023-07-16T08:20:30Z",
+                    "popularity": 94
+                },
+                ...
+            ]
 
-            Returns:
-                list: A list of dictionaries containing song details.
-            """
-            try:
-                if(self._Playlists_Details == []):
-                    self.get_list_of_playlist()
-                
-                # Get the current user's playlists
-                self._results = self._sp.playlist_items(playlist_id ,limit=100)
+        If an error occurs, returns an empty string and an empty list.
 
-                # List to store the playlist content
-                self._playlist_content = []
-                self._playlist_name = ""
-                
-                for item in self._Playlists_Details:
-                    if item['id'] == playlist_id:
-                        self._playlist_name = item['name']
-                        break
-                
-                while self._results:
-                    for item in self._results['items']:
-                        track = item['track']
-                        #extract details from track 
-                        song_name = track['name']
-                        artist_name = track['artists'][0]['name']
-                        artist_id = track['artists'][0]['id']
-                        album_name = track['album']['name']
-                        artist_info = self._sp.artist(artist_id)
-                        genre = ', '.join(artist_info['genres']) if artist_info['genres'] else 'Unknown'
-                        #get date added and date released
-                        date_added = item['added_at']
-                        release_date = track['album']['release_date']
-                        #append details to self._playlist_content
-                        self._playlist_content.append({
-                            'song_name': song_name,
-                            'artist_name': artist_name,
-                            'artist_id': artist_id,
-                            'genre': genre,
-                            'album_name': album_name,
-                            'date_released': release_date,
-                            'date_added': date_added
-                            })
-                    # Get the next page of results if available
-                    self._results = self._sp.next(self._results) if self._results['next'] else None
-                self._current_playlist_content = self._playlist_content
-                self._content_code_map[2] = self._current_playlist_content
-                return self._playlist_name , self._playlist_content
-            except Exception as e:
-                print(f"Error fetching playlist content: {e}")
-                return "",[]
+        ### BEHAVIOR
+        
+        - If the playlist details are not already fetched, it retrieves them using `get_list_of_playlist()`.
+        - Fetches up to 100 songs per request and continues paginated requests if more songs are available.
+        - Stores playlist details in `_current_playlist_content` and `_content_code_map[2]`.
+        - Returns the playlist name along with the list of song details.
+        """
+        try:
+            if(self._Playlists_Details == []):
+                self.get_list_of_playlist()
+            
+            # Get the current user's playlists
+            self._results = self._sp.playlist_items(playlist_id ,limit=100)
+
+            # List to store the playlist content
+            self._playlist_content = []
+            self._playlist_name = ""
+            
+            for item in self._Playlists_Details:
+                if item['id'] == playlist_id:
+                    self._playlist_name = item['name']
+                    break
+            
+            while self._results:
+                for item in self._results['items']:
+                    track = item['track']
+                    #extract details from track 
+                    track_id = track['id']
+                    song_name = track['name']
+                    artist_name = track['artists'][0]['name']
+                    artist_id = track['artists'][0]['id']
+                    album_name = track['album']['name']
+                    popularity = track['popularity']
+                    artist_info = self._sp.artist(artist_id)
+                    genre = ', '.join(artist_info['genres']) if artist_info['genres'] else 'Unknown'
+                    #get date added and date released
+                    date_added = item['added_at']
+                    release_date = track['album']['release_date']
+                    #append details to self._playlist_content
+                    self._playlist_content.append({
+                        'song_name': song_name,
+                        'song_id': track_id,
+                        'artist_name': artist_name,
+                        'artist_id': artist_id,
+                        'genre': genre,
+                        'album_name': album_name,
+                        'date_released': release_date,
+                        'date_added': date_added,
+                        'popularity': popularity
+                        })
+                # Get the next page of results if available
+                self._results = self._sp.next(self._results) if self._results['next'] else None
+            self._current_playlist_content = self._playlist_content
+            self._content_code_map[2] = self._current_playlist_content
+            return self._playlist_name , self._playlist_content
+        except Exception as e:
+            print(f"Error fetching playlist content: {e}")
+            return "",[]
+
 
     def get_liked_songs_playlist(self):
         """
-        Fetch the authenticated user's liked songs and return details like
-        song name, artist name, genre, and album name in the desired structure.
+        ### DESCRIPTION
+        
+        Fetches the authenticated user's liked songs and returns details such as 
+        song name, artist name, genre, album name, and additional metadata.
+            
+        ### RETURN
+        
+        liked_songs_label (str): A label indicating the returned data ("Liked_Songs").
+        liked_songs_content (list of dict): A list of dictionaries where each dictionary represents a liked song with:
+        
+            - 'song_name' (str): Name of the song.
+            - 'song_url' (str): Unique ID (URL) of the song.
+            - 'artist_name' (str): Name of the primary artist.
+            - 'artist_id' (str): Unique ID of the artist.
+            - 'genre' (str): Genre(s) associated with the artist.
+            - 'album_name' (str): Name of the album the song belongs to.
+            - 'date_released' (str): Release date of the song.
+            - 'date_added' (str): Date when the song was liked.
+            - "popularity" (int): A score of how popular the song is on spotify.
+            
+            Example:
+            [
+                {
+                    "song_name": "Blinding Lights",
+                    "song_url": "3A2gZZ3j5ZSU2hE2p9Ddlg",
+                    "artist_name": "The Weeknd",
+                    "artist_id": "1Xyo4u8uXC1ZmMpatF05PJ",
+                    "genre": "R&B, Pop",
+                    "album_name": "After Hours",
+                    "date_released": "2020-03-20",
+                    "date_added": "2023-07-15T12:34:56Z",
+                    "popularity": 90
+                },
+                {
+                    "song_name": "Shape of You",
+                    "song_url": "7qiZfU4dY1lWllzX7mPBI3",
+                    "artist_name": "Ed Sheeran",
+                    "artist_id": "6eUKZXaKkcviH0Ku9w2n3V",
+                    "genre": "Pop",
+                    "album_name": "Divide",
+                    "date_released": "2017-01-06",
+                    "date_added": "2023-07-16T08:20:30Z",
+                    "popularity": 95
+                },
+                ...
+            ]
 
-        Returns:
-            list: A list of dictionaries containing song details.
+        If an error occurs, returns an empty string and an empty list.
+
+        ### BEHAVIOR
+        
+        - Fetches the user's liked songs in batches of 50.
+        - Iterates through the pages until all liked songs are retrieved.
+        - Extracts relevant metadata, including song name, artist, genre, album, and timestamps.
+        - Stores the liked songs' details in `_liked_playlist_content` and `_content_code_map[3]`.
+        - Returns a label along with the structured list of liked songs.
         """
         try:
             # Initialize the list to hold the liked song details
@@ -214,10 +434,12 @@ class SpotifyAnalysis:
                 for item in self._results['items']:
                     track = item['track']
                     # Extract details from the track
+                    track_id = track['id']
                     song_name = track['name']
                     artist_name = track['artists'][0]['name']
                     artist_id = track['artists'][0]['id']
                     album_name = track['album']['name']
+                    popularity = track['popularity']
                     # Fetch artist details to get the genre
                     artist_info = self._sp.artist(artist_id)
                     genre = ', '.join(artist_info['genres']) if artist_info['genres'] else 'Unknown'
@@ -227,12 +449,14 @@ class SpotifyAnalysis:
                     # Append the details to the list
                     self._liked_songs_content.append({
                         'song_name': song_name,
+                        'song_url': track_id,
                         'artist_name': artist_name,
                         'artist_id': artist_id,
                         'genre': genre,
                         'album_name': album_name,
                         'date_released': release_date,
-                        'date_added': date_added
+                        'date_added': date_added,
+                        'popularity': popularity
                     })
 
                 # Fetch the next batch of results if available
@@ -245,7 +469,69 @@ class SpotifyAnalysis:
             print(f"Error fetching liked songs: {e}")
             return "",[]
     
+
     def save_data_as_csv(self,save_name,content_code):
+        """
+        ### DESCRIPTION
+        
+        Saves the provided content (list of dictionaries) as a CSV file.
+
+        ### PARAMETERS
+        
+        save_name (str): The desired filename (without extension) for saving the CSV.
+        content_code (int): The code representing the stored content in `_content_code_map`.
+
+        ### RETURN
+        
+        success (bool): 
+            - True if the data is successfully saved as a CSV.
+            - False if the content is missing, empty, or an error occurs.
+
+        ### BEHAVIOR
+        
+        - Retrieves the content corresponding to `content_code` from `_content_code_map`.
+        - Checks if the content exists and is non-empty.
+        - Converts the content (list of dictionaries) into a Pandas DataFrame.
+        - Saves the DataFrame as a CSV file in `_user_data_save_path` with `save_name`.
+        - Handles exceptions and logs errors.
+
+        ### EXPECTED CONTENT STRUCTURE (list of dict)
+        
+        The content should be a list of dictionaries, where each dictionary represents 
+        a row in the CSV file. Example structure:
+
+        [
+            {
+                "song_name": "Blinding Lights",
+                "song_id": "3A2gZZ3j5ZSU2hE2p9Ddlg",
+                "artist_name": "The Weeknd",
+                "artist_id": "1Xyo4u8uXC1ZmMpatF05PJ",
+                "genre": "R&B, Pop",
+                "album_name": "After Hours",
+                "date_released": "2020-03-20",
+                "date_added": "2023-07-15T12:34:56Z",
+                "popularity": 90
+            },
+            {
+                "song_name": "Shape of You",
+                "song_id": "7qiZfU4dY1lWllzX7mPBI3",
+                "artist_name": "Ed Sheeran",
+                "artist_id": "6eUKZXaKkcviH0Ku9w2n3V",
+                "genre": "Pop",
+                "album_name": "Divide",
+                "date_released": "2017-01-06",
+                "date_added": "2023-07-16T08:20:30Z",
+                "popularity": 90
+            },
+            ...
+        ]
+
+        ### NOTES
+        
+        - If the `content_code` does not exist in `_content_code_map`, the function returns `False`.
+        - If the content is an empty list, a message is printed and the function returns `False`.
+        - The CSV file is saved without an index.
+        """
         #Get content according to content code
         content = self._content_code_map.get(content_code)
         # print(f"\ncontent: {content}")
@@ -266,7 +552,8 @@ class SpotifyAnalysis:
         except Exception as e:
             print(f"Error saving data to CSV: {e}")
             return False
-        
+    
+
     def get_artist_top_tracks(self, artist_name):
         """
         Fetches and displays the top tracks of a given artist.
@@ -280,7 +567,7 @@ class SpotifyAnalysis:
         # Search for the artist
         results = self._sp.search(q=f"artist:{artist_name}", type='artist', limit=1)
         
-        print("/n",results)
+        #print("/n",results)
         if not results['artists']['items']:
             return f"No artist found with the name '{artist_name}'"
 
@@ -298,3 +585,56 @@ class SpotifyAnalysis:
 
         return top_tracks
 
+    def logout_user(self):
+        """
+        ### DESCRIPTION
+        Logs out the current authenticated Spotify user by:
+        - Clearing the authentication token cache.
+        - Deleting user data files.
+        - Resetting the `self._sp` instance.
+
+        ### PARAMETERS
+        None
+
+        ### RETURN
+        None
+
+        ### BEHAVIOR
+        - **Removes Spotify authentication cache**:  
+        - Deletes all files in the cache directory (`SPOTIFY_CACHE_PATH`), keeping the folder intact.
+        - If no cache exists, a message is displayed.
+        
+        - **Resets the Spotify API instance (`self._sp`)**:  
+        - Prevents further API calls after logout.
+        
+        - **Deletes user data files**:  
+        - Removes all files inside `self._user_data_save_path` but **keeps the directory** intact.
+        - Ensures only files are deleted, avoiding unintended folder removal.
+        
+        - **Handles errors gracefully**:  
+        - Catches and prints any exceptions that occur during the logout process.
+        """
+        try:
+            # Remove Spotify cache files but keep the directory
+            cache_path = os.getenv("SPOTIFY_CACHE_PATH")
+            if cache_path and os.path.exists(cache_path):
+                for file in os.listdir(cache_path):
+                    file_path = os.path.join(cache_path, file)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                print("Spotify cache cleared.")
+            else:
+                print("No Spotify cache found.")
+
+            # Reassign sp to None
+            self._sp = None
+
+            # Delete only files inside user data folder but keep the folder
+            if os.path.exists(self._user_data_save_path):
+                for file in os.listdir(self._user_data_save_path):
+                    file_path = os.path.join(self._user_data_save_path, file)
+                    if os.path.isfile(file_path):  # Ensure only files are deleted
+                        os.remove(file_path)
+                print("User data files deleted.")
+        except Exception as e:
+            print(f"Error logging out: {e}")

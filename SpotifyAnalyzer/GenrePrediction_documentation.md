@@ -1,8 +1,8 @@
-# SpotifyAnalyzer - utils.py Documentation
+# SpotifyAnalyzer - GenrePrediction.py Documentation
 
 ## Overview
 
-The `utils.py` file in the SpotifyAnalyzer project provides utility functions and classes that facilitate the processing of Spotify data. These utilities are used for various tasks such as data manipulation, transformation, and other helper functionalities essential for the main analysis.
+The `GenrePrediction.py` file in the SpotifyAnalyzer project provides utility functions and classes that facilitate the processing of predicting genre of a song using RNN and melspectrogram of audio. These utilities are used for various tasks such as data manipulation, transformation, and other helper functionalities essential for the main analysis.
 
 ---
 

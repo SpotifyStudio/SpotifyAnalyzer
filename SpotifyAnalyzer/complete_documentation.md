@@ -1,6 +1,6 @@
 # SpotifyAnalyzer - Complete Documentation
 
-## 📋 Table of Contents
+## �� Table of Contents
 
 - [Overview](#overview)
 - [Project Structure](#project-structure)
@@ -176,6 +176,20 @@ Initializes the `SpotifyAnalysis` class by setting up authentication with the Sp
 
 - `ValueError`: If Spotify Client ID or Client Secret is not set in environment variables
 
+**Instance Variables:**
+
+- `self._spotify_client_id` (str): Spotify API Client ID loaded from environment variables
+- `self._spotify_client_secret` (str): Spotify API Client Secret loaded from environment variables
+- `self._spotify_redirect_uri` (str): Redirect URI for OAuth authentication
+- `self._scope` (str): Required permissions for accessing Spotify data
+- `self._user_data_save_path` (str): Path to save user data
+- `self._sp` (Spotify): Authenticated Spotify API client instance
+- `self._user_id` (str): Stores the user's unique Spotify ID
+- `self._user_name` (str): Stores the user's Spotify display name
+- `self._Playlists_Details` (list): Stores details of the user's playlists
+- `self._current_playlist_content` (list): Stores tracks of the currently selected playlist
+- `self._liked_playlist_content` (list): Stores tracks from the user's liked songs
+
 #### `get_user_id(self) -> tuple[str, str] | None`
 
 Retrieves the currently authenticated user's Spotify user ID and display name.
@@ -186,23 +200,30 @@ Retrieves the currently authenticated user's Spotify user ID and display name.
 
 #### `check_token_validity(self) -> bool`
 
-Verifies whether the current Spotify API token is valid.
+Verifies whether the current Spotify API token is valid. If the token is expired or invalid, it triggers reauthentication.
 
 **Returns:**
 
-- `bool`: `True` if token is valid, `False` if invalid/expired
+- `bool`: `True` if token is valid, `False` if token is expired or invalid
 
 #### `Reauthenticate(self) -> None`
 
-Prompts user to reauthenticate and updates the Spotify API token.
+Prompts the user to reauthenticate with Spotify and updates the API token.
+
+**Behavior:**
+
+- Re-initiates authentication using `SpotifyOAuth`
+- Updates the authentication manager with a new token
+- Replaces the existing Spotify API client instance with the newly authenticated session
+- Prints `"Authentication successful. Token updated."` upon success
 
 #### `get_list_of_playlist(limit: int = 20) -> tuple[str, list[dict]]`
 
-Fetches the playlists of the authenticated Spotify user.
+Fetches and returns the playlists of the authenticated Spotify user.
 
 **Parameters:**
 
-- `limit` (int): Number of playlists to fetch (default: 20)
+- `limit` (int): Number of playlists to fetch per request (default: 20)
 
 **Returns:**
 
@@ -210,9 +231,19 @@ Fetches the playlists of the authenticated Spotify user.
   - `name` (str): Playlist name
   - `id` (str): Playlist ID
 
+**Example Output:**
+
+```json
+[
+  { "name": "My Favorite Songs", "id": "3FvDkjskH5l" },
+  { "name": "Chill Vibes", "id": "8hHdYtB24zA" },
+  { "name": "Workout Hits", "id": "9KlsM3rA76P" }
+]
+```
+
 #### `get_playlist_content(playlist_id: str) -> tuple[str, list[dict]]`
 
-Fetches the contents of a Spotify playlist using its ID.
+Fetches the contents of a Spotify playlist using its playlist ID. Returns details such as song name, artist name, genre, album name, release date, and popularity.
 
 **Parameters:**
 
@@ -231,13 +262,71 @@ Fetches the contents of a Spotify playlist using its ID.
   - `date_added` (str): Date added to playlist
   - `popularity` (int): Spotify popularity score
 
+**Example Output:**
+
+```json
+[
+  {
+    "song_name": "Blinding Lights",
+    "song_id": "3A2gZZ3j5ZSU2hE2p9Ddlg",
+    "artist_name": "The Weeknd",
+    "artist_id": "1Xyo4u8uXC1ZmMpatF05PJ",
+    "genre": "R&B, Pop",
+    "album_name": "After Hours",
+    "date_released": "2020-03-20",
+    "date_added": "2023-07-15T12:34:56Z",
+    "popularity": 90
+  },
+  {
+    "song_name": "Shape of You",
+    "song_id": "7qiZfU4dY1lWllzX7mPBI3",
+    "artist_name": "Ed Sheeran",
+    "artist_id": "6eUKZXaKkcviH0Ku9w2n3V",
+    "genre": "Pop",
+    "album_name": "Divide",
+    "date_released": "2017-01-06",
+    "date_added": "2023-07-16T08:20:30Z",
+    "popularity": 94
+  }
+]
+```
+
 #### `get_liked_songs_playlist() -> tuple[str, list[dict]]`
 
-Fetches the authenticated user's liked songs.
+Fetches the contents of a Spotify Liked songs playlist. Returns details such as song name, artist name, genre, album name, release date, and popularity.
 
 **Returns:**
 
 - `tuple[str, list[dict]]`: (label, liked_songs) with same track structure as playlist content
+
+**Example Output:**
+
+```json
+[
+  {
+    "song_name": "Blinding Lights",
+    "song_id": "3A2gZZ3j5ZSU2hE2p9Ddlg",
+    "artist_name": "The Weeknd",
+    "artist_id": "1Xyo4u8uXC1ZmMpatF05PJ",
+    "genre": "R&B, Pop",
+    "album_name": "After Hours",
+    "date_released": "2020-03-20",
+    "date_added": "2023-07-15T12:34:56Z",
+    "popularity": 90
+  },
+  {
+    "song_name": "Shape of You",
+    "song_id": "7qiZfU4dY1lWllzX7mPBI3",
+    "artist_name": "Ed Sheeran",
+    "artist_id": "6eUKZXaKkcviH0Ku9w2n3V",
+    "genre": "Pop",
+    "album_name": "Divide",
+    "date_released": "2017-01-06",
+    "date_added": "2023-07-16T08:20:30Z",
+    "popularity": 94
+  }
+]
+```
 
 #### `save_data_as_csv(save_name: str, content_code: int) -> bool`
 
@@ -252,9 +341,17 @@ Saves the specified content as a CSV file.
 
 - `bool`: `True` if successful, `False` if error
 
+**Behavior:**
+
+1. Retrieves content using `content_code` from `_content_code_map`
+2. Checks if the content exists and is non-empty
+3. Converts the list of dictionaries into a Pandas DataFrame
+4. Saves the DataFrame as a CSV file in `_user_data_save_path` with the specified `save_name`
+5. Handles exceptions and logs errors
+
 #### `get_artist_top_tracks(artist_name: str) -> list[tuple[str, int]] | str`
 
-Fetches and displays the top tracks of a given artist.
+Fetches and displays the top tracks of a given artist using the Spotify API.
 
 **Parameters:**
 
@@ -265,19 +362,63 @@ Fetches and displays the top tracks of a given artist.
 - `list[tuple[str, int]]`: List of (track_name, popularity) tuples
 - `str`: Error message if artist not found
 
+**Behavior:**
+
+1. Searches for the artist using Spotify's search API
+2. If the artist exists, retrieves their `artist_id`
+3. Fetches the artist's top tracks using the `artist_top_tracks` API
+4. Extracts the track names and popularity scores
+5. Displays the results in a numbered list
+6. Returns a list of `(track_name, popularity)` tuples
+
+**Example Output:**
+
+```
+Found Artist: Ed Sheeran (ID: 6eUKZXaKkcviH0Ku9w2n3V)
+1. Shape of You (Popularity: 90)
+2. Perfect (Popularity: 87)
+3. Bad Habits (Popularity: 85)
+...
+```
+
 #### `logout_user() -> None`
 
-Logs out the current user by clearing cache and deleting user data files.
+Logs out the current authenticated Spotify user by clearing authentication cache, deleting user data files, and resetting the Spotify API instance.
+
+**Behavior:**
+
+1. **Clears Spotify Authentication Cache**
+
+   - Deletes all files in the cache directory (`SPOTIFY_CACHE_PATH`) while keeping the folder intact
+   - Displays a message if no cache is found
+
+2. **Resets Spotify API Instance (`self._sp`)**
+
+   - Prevents further API calls after logout
+
+3. **Deletes User Data Files**
+
+   - Removes all files inside `self._user_data_save_path` while keeping the directory intact
+   - Ensures only files are deleted, avoiding unintended folder removal
+
+4. **Handles Errors Gracefully**
+   - Catches and prints any exceptions during the logout process
 
 ### GenrePrediction Methods
 
 #### `__init__(self)`
 
-Initializes the `GenrePrediction` class, setting up paths for the audio directory and the model.
+Initializes the `GenrePrediction` class, setting up paths for the audio directory and the model. It also attempts to load the pre-trained machine learning model.
+
+**Instance Variables:**
+
+- A list of genres
+- Paths to the audio directory and model
+- Attempts to load the model using the `load_genre_model()` method
 
 #### `get_current_audio_name(self) -> str`
 
-Returns the name of the next audio file to be saved.
+Returns the name of the next audio file to be saved. This is based on the existing files in the audio directory, ensuring unique filenames by incrementing the number in the filename.
 
 **Returns:**
 
@@ -285,7 +426,7 @@ Returns the name of the next audio file to be saved.
 
 #### `copy_wav_to_folder(self, audio_path: str) -> None`
 
-Copies a given WAV file to the target folder and renames it.
+Copies a given WAV file to the target folder and renames it using the current naming convention for audio files.
 
 **Parameters:**
 
@@ -293,7 +434,7 @@ Copies a given WAV file to the target folder and renames it.
 
 #### `mp3_to_wav(self, input_audio_path: str) -> None`
 
-Converts an MP3 file to WAV format using `ffmpeg`.
+Converts an MP3 file to WAV format using `ffmpeg` and stores it in the specified audio directory.
 
 **Parameters:**
 
@@ -301,7 +442,7 @@ Converts an MP3 file to WAV format using `ffmpeg`.
 
 #### `load_genre_model(self) -> model | None`
 
-Loads the pre-trained machine learning model for genre prediction.
+Loads the pre-trained machine learning model for genre prediction from the specified model path.
 
 **Returns:**
 
@@ -310,7 +451,7 @@ Loads the pre-trained machine learning model for genre prediction.
 
 #### `preprocess_audio(self, target_shape: tuple = (150, 150)) -> np.ndarray | None`
 
-Preprocesses the audio file by splitting it into chunks and generating Mel-spectrograms.
+Preprocesses the audio file by splitting it into chunks, generating Mel-spectrograms for each chunk, and resizing them to match the target shape for the model input.
 
 **Parameters:**
 
@@ -319,23 +460,23 @@ Preprocesses the audio file by splitting it into chunks and generating Mel-spect
 **Returns:**
 
 - `np.ndarray`: A 3D numpy array containing the preprocessed Mel-spectrogram chunks
-- `None`: If an error occurs during preprocessing
+- `None`: If an error occurs during preprocessing or loading the audio
 
 #### `prediction(self, processed_audio: np.ndarray) -> int`
 
-Predicts the genre of the audio based on the processed Mel-spectrograms.
+Predicts the genre of the audio based on the processed Mel-spectrograms. The model is used to classify the genre, and the genre with the highest predicted score is selected.
 
 **Parameters:**
 
-- `processed_audio` (np.ndarray): The preprocessed Mel-spectrogram chunks
+- `processed_audio` (np.ndarray): The preprocessed Mel-spectrogram chunks to be passed to the model
 
 **Returns:**
 
-- `int`: The index of the predicted genre in the genres list
+- `int`: The index of the predicted genre in the `self._genres` list
 
 #### `predict_genre_chain(self, audio_path: str, target_shape: tuple = (150, 150)) -> str | None`
 
-The full pipeline for predicting the genre of an audio file.
+The full pipeline for predicting the genre of an audio file. It handles the file format check (MP3 or WAV), converts MP3 to WAV if needed, preprocesses the audio, and uses the model to predict the genre.
 
 **Parameters:**
 
@@ -345,7 +486,7 @@ The full pipeline for predicting the genre of an audio file.
 **Returns:**
 
 - `str`: The predicted genre label (e.g., 'rock', 'pop')
-- `None`: If there was an error in the process
+- `None`: If there was an error in the process (e.g., unsupported file format or preprocessing failure)
 
 ---
 
@@ -398,13 +539,20 @@ spotify.logout_user()
 ### Example 2: Genre Prediction
 
 ```python
+import sys
+import os
+
+# Dynamically add the src directory to the module search path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+
+# Import after modifying the path
 from src.SpotifyAnalyzer.utils import GenrePrediction
 
 # Initialize genre prediction
 mod = GenrePrediction()
 
 # Predict genre for an audio file
-audio_path = "path/to/your/audio.mp3"
+audio_path = "tests/metal_demo.mp3"
 predicted_genre = mod.predict_genre_chain(audio_path)
 print(f"Predicted genre: {predicted_genre}")
 ```
@@ -489,6 +637,40 @@ sa.get_artist_top_tracks(artist)
 
 # Logout
 sa.logout_user()
+```
+
+### Example 5: Advanced Usage with Both Components
+
+```python
+from src.SpotifyAnalyzer.SpotifyAnalyzer import SpotifyAnalysis
+from src.SpotifyAnalyzer.utils import GenrePrediction
+import pandas as pd
+
+# Initialize both components
+spotify = SpotifyAnalysis()
+genre_predictor = GenrePrediction()
+
+# Get user's liked songs
+label, liked_songs = spotify.get_liked_songs_playlist()
+print(f"Analyzing {len(liked_songs)} liked songs")
+
+# Analyze genres from Spotify data
+liked_df = pd.DataFrame(liked_songs)
+if not liked_df.empty:
+    spotify_genres = liked_df['genre'].value_counts()
+    print("\nTop genres from Spotify data:")
+    print(spotify_genres.head(5))
+
+# Example: Predict genre for a local audio file
+audio_file = "path/to/local/audio.mp3"
+try:
+    predicted_genre = genre_predictor.predict_genre_chain(audio_file)
+    print(f"\nPredicted genre for {audio_file}: {predicted_genre}")
+except Exception as e:
+    print(f"Genre prediction failed: {e}")
+
+# Save comprehensive analysis
+spotify.save_data_as_csv("complete_analysis", 3)
 ```
 
 ---

@@ -205,7 +205,7 @@ class SpotifyAnalysis:
         print("Authentication successful. Token updated.")
     
 
-    def get_list_of_playlist(self,limit = 20):
+    def get_list_of_playlist(self, limit = 20):
         """
         ### DESCRIPTION
         
@@ -314,57 +314,64 @@ class SpotifyAnalysis:
         - Returns the playlist name along with the list of song details.
         """
         try:
-            if(self._Playlists_Details == []):
+            if not self._Playlists_Details:
                 self.get_list_of_playlist()
-            
-            # Get the current user's playlists
-            self._results = self._sp.playlist_items(playlist_id ,limit=100)
 
-            # List to store the playlist content
+            # Get the playlist items (first page)
+            results = self._sp.playlist_items(playlist_id, limit=100)
+
+            # Prepare list to store playlist content
             self._playlist_content = []
             self._playlist_name = ""
-            
+
+            # Find the playlist name from stored details
             for item in self._Playlists_Details:
                 if item['id'] == playlist_id:
                     self._playlist_name = item['name']
                     break
-            
-            while self._results:
-                for item in self._results['items']:
+
+            # Paginate through all playlist items
+            while results:
+                for item in results['items']:
                     track = item['track']
-                    #extract details from track 
-                    track_id = track['id']
-                    song_name = track['name']
-                    artist_name = track['artists'][0]['name']
-                    artist_id = track['artists'][0]['id']
-                    album_name = track['album']['name']
-                    popularity = track['popularity']
-                    artist_info = self._sp.artist(artist_id)
-                    genre = ', '.join(artist_info['genres']) if artist_info['genres'] else 'Unknown'
-                    #get date added and date released
-                    date_added = item['added_at']
-                    release_date = track['album']['release_date']
-                    #append details to self._playlist_content
+                    if not track:  # Skip if no track data
+                        continue
                     self._playlist_content.append({
-                        'song_name': song_name,
-                        'song_id': track_id,
-                        'artist_name': artist_name,
-                        'artist_id': artist_id,
-                        'genre': genre,
-                        'album_name': album_name,
-                        'date_released': release_date,
-                        'date_added': date_added,
-                        'popularity': popularity
-                        })
-                # Get the next page of results if available
-                self._results = self._sp.next(self._results) if self._results['next'] else None
+                        'song_name': track['name'],
+                        'song_id': track['id'],
+                        'artist_name': track['artists'][0]['name'],
+                        'artist_id': track['artists'][0]['id'],
+                        'genre': None,  # placeholder for batch fill
+                        'album_name': track['album']['name'],
+                        'date_released': track['album']['release_date'],
+                        'date_added': item['added_at'],
+                        'popularity': track['popularity']
+                    })
+                results = self._sp.next(results) if results['next'] else None
+
+            # ✅ Get all unique artist IDs
+            artist_ids = list({t['artist_id'] for t in self._playlist_content})
+
+            # ✅ Batch fetch genres (max 50 IDs per API call)
+            artist_genres = {}
+            for i in range(0, len(artist_ids), 50):
+                batch = artist_ids[i:i+50]
+                artists_info = self._sp.artists(batch)
+                for a in artists_info['artists']:
+                    artist_genres[a['id']] = ', '.join(a['genres']) if a['genres'] else 'Unknown'
+
+            # ✅ Fill genres back into playlist content
+            for track in self._playlist_content:
+                track['genre'] = artist_genres.get(track['artist_id'], 'Unknown')
+
             self._current_playlist_content = self._playlist_content
             self._content_code_map[2] = self._current_playlist_content
-            return self._playlist_name , self._playlist_content
+            return self._playlist_name, self._playlist_content
+
         except Exception as e:
             print(f"Error fetching playlist content: {e}")
-            return "",[]
-
+            return "", []
+    
 
     def get_liked_songs_playlist(self):
         """
@@ -428,49 +435,53 @@ class SpotifyAnalysis:
         try:
             # Initialize the list to hold the liked song details
             self._liked_songs_content = []
-            self._results = self._sp.current_user_saved_tracks(limit=50)  # Fetch initial batch of liked songs
-            
-            while self._results:
-                for item in self._results['items']:
+
+            results = self._sp.current_user_saved_tracks(limit=50)  # Fetch initial batch of liked songs
+
+            while results:
+                for item in results['items']:
                     track = item['track']
-                    # Extract details from the track
-                    track_id = track['id']
-                    song_name = track['name']
-                    artist_name = track['artists'][0]['name']
-                    artist_id = track['artists'][0]['id']
-                    album_name = track['album']['name']
-                    popularity = track['popularity']
-                    # Fetch artist details to get the genre
-                    artist_info = self._sp.artist(artist_id)
-                    genre = ', '.join(artist_info['genres']) if artist_info['genres'] else 'Unknown'
-                    #get date added and date released
-                    date_added = item['added_at']
-                    release_date = track['album']['release_date']
-                    # Append the details to the list
+                    if not track:
+                        continue
+
                     self._liked_songs_content.append({
-                        'song_name': song_name,
-                        'song_url': track_id,
-                        'artist_name': artist_name,
-                        'artist_id': artist_id,
-                        'genre': genre,
-                        'album_name': album_name,
-                        'date_released': release_date,
-                        'date_added': date_added,
-                        'popularity': popularity
+                        'song_name': track['name'],
+                        'song_id': track['id'],
+                        'artist_name': track['artists'][0]['name'],
+                        'artist_id': track['artists'][0]['id'],
+                        'genre': None,  # placeholder for later batch filling
+                        'album_name': track['album']['name'],
+                        'date_released': track['album']['release_date'],
+                        'date_added': item['added_at'],
+                        'popularity': track['popularity']
                     })
 
                 # Fetch the next batch of results if available
-                self._results = self._sp.next(self._results) if self._results['next'] else None
+                results = self._sp.next(results) if results['next'] else None
+
+            # Batch fetch genres for all unique artists (max 50 per call)
+            artist_ids = list({t['artist_id'] for t in self._liked_songs_content})
+            artist_genres = {}
+            for i in range(0, len(artist_ids), 50):
+                batch = artist_ids[i:i+50]
+                artists_info = self._sp.artists(batch)
+                for a in artists_info['artists']:
+                    artist_genres[a['id']] = ', '.join(a['genres']) if a['genres'] else 'Unknown'
+
+            # Fill the genre field for each song
+            for t in self._liked_songs_content:
+                t['genre'] = artist_genres.get(t['artist_id'], 'Unknown')
+
             self._liked_playlist_content = self._liked_songs_content
             self._content_code_map[3] = self._liked_playlist_content
-            return "Liked_Songs",self._liked_songs_content
+            return "Liked_Songs", self._liked_songs_content
 
         except Exception as e:
             print(f"Error fetching liked songs: {e}")
-            return "",[]
+            return "", []
     
 
-    def save_data_as_csv(self,save_name,content_code):
+    def save_data_as_csv(self, save_name,content_code):
         """
         ### DESCRIPTION
         
@@ -584,7 +595,36 @@ class SpotifyAnalysis:
             print(f"{i}. {name} (Popularity: {popularity})")
 
         return top_tracks
+    
 
+    def get_track_metrics(self, content_code):
+        try:
+            playlist = self._content_code_map[content_code]
+            if not playlist:
+                print("No playlist/tracks found for the given content code.")
+                return []
+            # extract all track ids into track_ids
+            track_ids = [track['song_id'] for track in playlist if track.get('song_id')]
+            # if no track found 
+            if not track_ids:
+                print("No valid track IDs found.")
+                return playlist
+            # prepare audio_feature_map
+            audio_features_map = dict()
+            # get audio features in batches of 100 max
+            for i in range(0, len(track_ids), 100):
+                batch = track_ids[i:i+100]
+                features_list = self._sp.audio_features(batch)
+                for f in features_list:
+                    if f and f.get('id'):
+                        audio_features_map[f['id']] = f
+            print(audio_features_map)
+            
+            
+        except Exception as e:
+            print(f"Error in fetching track metrics: {e}");
+            return [];
+    
     def logout_user(self):
         """
         ### DESCRIPTION
@@ -625,10 +665,8 @@ class SpotifyAnalysis:
                 print("Spotify cache cleared.")
             else:
                 print("No Spotify cache found.")
-
             # Reassign sp to None
             self._sp = None
-
             # Delete only files inside user data folder but keep the folder
             if os.path.exists(self._user_data_save_path):
                 for file in os.listdir(self._user_data_save_path):
@@ -638,3 +676,5 @@ class SpotifyAnalysis:
                 print("User data files deleted.")
         except Exception as e:
             print(f"Error logging out: {e}")
+    
+

@@ -8,7 +8,6 @@ import pandas as pd
 load_dotenv(dotenv_path=".env.api", override=True)
 load_dotenv(dotenv_path=".env.path", override=True)
 
-
 class SpotifyAnalysis:
     """
     A class for analyzing a user's Spotify account by retrieving and managing playlist 
@@ -88,7 +87,7 @@ class SpotifyAnalysis:
         self._spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
         self._spotify_redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
         self._scope = "user-top-read user-read-recently-played user-library-read playlist-read-private playlist-read-collaborative"
-        self._user_data_save_path = os.getenv("USER_DATA_SAVE")
+        self._user_data_save_path = os.getenv("SPOTIFY_USER_DATA_SAVE_PATH")
         # Check if api keys are available  
         if not self._spotify_client_id or not self._spotify_client_secret:
             raise ValueError("Spotify client ID and secret must be set in the environment variables.")
@@ -625,6 +624,7 @@ class SpotifyAnalysis:
             print(f"Error in fetching track metrics: {e}");
             return [];
     
+
     def logout_user(self):
         """
         ### DESCRIPTION
